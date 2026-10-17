@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pocket Market</title>
+<style>
+:root{--bg:#0b0b0d;--surface:#151518;--line:#26262b;--ink:#ececf1;--mute:#85858f;--purple:#8b5cf6;--purple-hi:#a78bfa;--purple-lo:#6d3fe0;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:linear-gradient(160deg,#0b0b0d 0%,#15101f 45%,#2c1856 100%) fixed,var(--bg);color:var(--ink);font:400 16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+button{font:inherit;cursor:pointer}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--purple-hi);outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}}
+@keyframes fade{from{opacity:0}}
+@keyframes shine{to{background-position:-200% 0}}
+@keyframes nudge{0%,100%{transform:translateX(-2px)}50%{transform:translateX(3px)}}
+@keyframes sweep{to{transform:translateX(400%)}}
+@keyframes breathe{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+/* screens */
+.screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(560px 380px at 50% 32%,rgba(139,92,246,.16),transparent 70%)}
+.ld{width:min(360px,100%);text-align:center}
+.ld h1{animation:breathe 2.2s ease-in-out infinite}
+.bar{height:8px;background:var(--surface);border:1px solid var(--line);border-radius:99px;overflow:hidden;margin:26px 0 12px}
+.bar i{display:block;position:relative;overflow:hidden;height:100%;width:0;background:linear-gradient(90deg,var(--purple-lo),var(--purple-hi));border-radius:99px;box-shadow:0 0 14px var(--purple)}
+.bar i::after{content:"";position:absolute;top:0;bottom:0;width:30%;left:-30%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:sweep 1.1s linear infinite}
+.ldrow{display:flex;justify-content:space-between;color:var(--mute);font-size:14px}
+.box{width:min(380px,100%);display:flex;flex-direction:column;gap:14px}
+.box>h1,.box>#sub,.box>.seg,.box>#fields,.box>#err,.box>.swipe{animation:rise .55s cubic-bezier(.2,.8,.2,1) both}
+.box>#sub{animation-delay:.06s}.box>.seg{animation-delay:.12s}.box>#fields{animation-delay:.18s}.box>#err{animation-delay:.24s}.box>.swipe{animation-delay:.3s}
+.box h1{text-align:center;margin:0}
+#sub{margin:-8px 0 4px;text-align:center;color:var(--mute);font-size:14px}
+.seg{position:relative;display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:12px;padding:3px;background:var(--surface)}
+.pill{position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);background:linear-gradient(135deg,var(--purple-lo),var(--purple));border-radius:9px;box-shadow:0 0 16px rgba(139,92,246,.4);transition:transform .45s cubic-bezier(.65,0,.25,1)}
+.seg[data-m="in"] .pill{transform:translateX(100%)}
+.seg button{position:relative;border:0;background:transparent;color:var(--mute);padding:9px;transition:color .3s}
+.seg button[aria-pressed="true"]{color:#fff}
+#fields{display:flex;flex-direction:column;gap:14px}
+label{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--mute)}
+input{background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:11px 12px;font:inherit;transition:border-color .2s,box-shadow .2s}
+input:focus{outline:none;border-color:var(--purple);box-shadow:0 0 0 3px rgba(139,92,246,.2)}
+#fel{display:grid;grid-template-rows:1fr;transition:grid-template-rows .45s cubic-bezier(.65,0,.25,1),opacity .35s,margin .45s cubic-bezier(.65,0,.25,1)}
+#fel>div{overflow:hidden;min-height:0;padding:0 3px;margin:0 -3px}
+#fel[data-off]{grid-template-rows:0fr;opacity:0;margin-top:-14px}
+#err{margin:0;min-height:20px;color:var(--purple-hi);font-size:14px}
+/* swipe bar */
+.swipe{--x:0px;--p:0;position:relative;height:58px;border:1px solid var(--line);background:linear-gradient(180deg,#101013,var(--surface));border-radius:99px;overflow:hidden;user-select:none;-webkit-user-select:none;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 2px 8px rgba(0,0,0,.5);transition:border-color .3s}
+.swipe:hover,.swipe.drag{border-color:var(--purple)}
+.swipe::before{content:"";position:absolute;left:0;top:0;bottom:0;width:calc(var(--x) + 54px);background:linear-gradient(90deg,rgba(109,63,224,.55),rgba(167,139,250,.55))}
+.lbl{position:relative;padding-left:46px;opacity:calc(1 - var(--p)*1.5)}
+#swt{font-size:15px;background:linear-gradient(90deg,var(--mute) 40%,#fff 50%,var(--mute) 60%) 0 0/200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 2.4s linear infinite}
+.knob{position:absolute;left:4px;top:4px;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--purple-hi),var(--purple-lo));color:#fff;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;box-shadow:0 2px 10px rgba(0,0,0,.5),0 0 calc(8px + var(--p)*26px) rgba(139,92,246,.75)}
+.swipe.drag .knob{cursor:grabbing}
+.knob svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.swipe:not(.drag):not(.ok) .ar{animation:nudge 1.5s ease-in-out infinite}
+.ck{display:none}
+.swipe.ok .ar{display:none}.swipe.ok .ck{display:block}
+.swipe.ok .lbl{opacity:1}
+.swipe.ok #swt{animation:none;color:#fff;-webkit-text-fill-color:#fff}
+/* shop */
+.wrap{max-width:900px;margin:0 auto;padding:24px 16px 60px}
+#app:not([hidden]){animation:fade .6s both}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+h1{font-size:24px;font-weight:600;margin:0}
+.bal{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:600;flex-wrap:wrap}
+.bal #bal{display:inline-block}
+.bal span.u{color:var(--mute);font-weight:400;font-size:14px;margin-left:-6px}
+#who{margin-left:0!important}
+.bal button{border:1px solid var(--purple);background:transparent;color:var(--purple-hi);border-radius:8px;padding:6px 12px;font-size:14px;transition:background .2s,color .2s,transform .15s}
+.bal button:hover{background:var(--purple);color:#fff}
+.bal button:active,.btn:active,.pack:active{transform:scale(.96)}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto}
+nav button{background:none;border:0;color:var(--mute);padding:10px 14px;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color .2s,border-color .2s}
+nav button:hover{color:var(--ink)}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--purple)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.chips button{border:1px solid var(--line);background:transparent;color:var(--mute);border-radius:8px;padding:4px 12px;font-size:14px;transition:all .2s}
+.chips button:hover{color:var(--ink)}
+.chips button[aria-pressed="true"]{border-color:var(--purple);color:var(--purple-hi)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:4px;transition:border-color .25s,transform .25s,box-shadow .25s}
+.card:hover{border-color:var(--purple);transform:translateY(-3px);box-shadow:0 8px 24px rgba(139,92,246,.15)}
+.card small{color:var(--purple-hi);font-size:13px}
+.card h3{margin:0;font-size:17px;font-weight:600}
+.card p{margin:0;color:var(--mute);font-size:14px;flex:1}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
+.price{font-weight:600}
+.btn{border:0;border-radius:8px;background:var(--purple);color:#fff;padding:7px 16px;transition:background .2s,transform .15s}
+.btn:hover{background:var(--purple-hi)}
+.btn.alt{background:transparent;border:1px solid var(--line);color:var(--mute)}
+.owned{color:var(--purple-hi);font-size:14px}
+.packs{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px;padding:14px 16px;background:var(--surface);border:1px solid var(--purple);border-radius:10px;animation:rise .35s both}
+.packs p{margin:0;flex:1 1 100%;color:var(--mute);font-size:14px}
+.pack{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:8px 16px;transition:border-color .2s,transform .15s}
+.pack:hover{border-color:var(--purple)}
+.list{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.list li{display:flex;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.list li:last-child{border:0}
+.list time{color:var(--mute);font-size:13px}
+.plus{color:var(--purple-hi)}
+.empty{padding:32px 16px;text-align:center;color:var(--mute)}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,10px);background:var(--purple);color:#fff;padding:10px 18px;border-radius:8px;opacity:0;pointer-events:none;transition:.25s;max-width:90vw;z-index:5}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+.foot{margin-top:28px;color:var(--mute);font-size:13px}
+/* library layout */
+header h1{font-size:15px;font-weight:600}
+nav{justify-content:center;overflow:visible;margin:0;padding:4px;gap:2px;background:rgba(21,21,24,.72);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(8px)}
+nav button{margin:0;border:0;border-radius:10px;padding:6px 18px}
+nav button[aria-selected="true"]{background:rgba(139,92,246,.24);color:#fff;border:0}
+.pt{font-size:40px;font-weight:700;letter-spacing:-.02em;margin:8px 0 4px}
+.ps{margin:0 0 24px;color:var(--mute)}
+.pt2{font-size:20px;font-weight:600;margin:30px 0 12px}
+.sbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 16px;border:1px solid var(--line);border-radius:18px;background:rgba(21,21,24,.6);color:var(--mute)}
+.sbar input{flex:1;min-width:140px;background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:10px 4px;box-shadow:none}
+.sbar input:focus{border-bottom-color:var(--purple);box-shadow:none}
+.sbar select{min-width:150px;background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:10px 12px;font:inherit}
+.go{background:#3a3a40;color:#fff;border:0;border-radius:10px;padding:10px 24px;transition:background .2s}
+.go:hover{background:var(--purple)}
+.car{position:relative}
+.strip{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:6px 52px}
+.strip::-webkit-scrollbar{display:none}
+.arr{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:56px;border:1px solid var(--line);background:rgba(11,11,13,.88);color:var(--ink);border-radius:10px;font-size:22px;z-index:2;transition:border-color .2s}
+.arr.l{left:0}.arr.r{right:0}.arr:hover{border-color:var(--purple)}
+.tile{flex:0 0 min(300px,72%);height:150px;scroll-snap-align:start;position:relative;border-radius:16px;overflow:hidden;background:linear-gradient(135deg,hsl(var(--h) 50% 30%),hsl(var(--h2) 55% 12%));transition:transform .25s,box-shadow .25s}
+.tile:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(139,92,246,.25)}
+.tile .big{position:absolute;right:14px;top:-8px;font-size:110px;font-weight:800;line-height:1;color:rgba(255,255,255,.12)}
+.tag{position:absolute;top:10px;left:10px;font-style:normal;font-size:12px;background:rgba(139,92,246,.25);color:var(--purple-hi);border:1px solid rgba(167,139,250,.4);border-radius:6px;padding:1px 8px}
+.ti{position:absolute;left:0;right:0;bottom:0;padding:34px 16px 12px;background:linear-gradient(transparent,rgba(0,0,0,.75))}
+.ti h3{margin:0;font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr{display:flex;justify-content:space-between;align-items:center;color:#b6b6c0;font-size:13px}
+.btn.sm{padding:4px 12px;font-size:13px}
+.tile.ph{border:1.5px dashed var(--line);background:rgba(21,21,24,.5);display:flex;align-items:center;justify-content:center;color:var(--mute);box-shadow:none;transform:none}
+@media (max-width:700px){nav{order:3;width:100%}.pt{font-size:32px}.strip{padding:6px 44px}}
+/* library glow and admin */
+@keyframes glow{50%{box-shadow:0 0 26px rgba(196,181,253,.9),0 0 70px rgba(139,92,246,.65)}}
+.lib{padding:10px}
+.lib .tile{box-shadow:0 0 16px rgba(167,139,250,.65),0 0 46px rgba(139,92,246,.45);outline:1px solid rgba(196,181,253,.75);outline-offset:-1px;animation:glow 3s ease-in-out infinite}
+.subnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.subnav button{border:1px solid var(--line);background:transparent;color:var(--mute);border-radius:8px;padding:5px 14px;font-size:14px;transition:all .2s}
+.subnav button[aria-pressed="true"]{border-color:var(--purple);color:var(--purple-hi)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.stat,.panel{background:rgba(21,21,24,.8);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.panel{margin-bottom:16px}
+.panel h3{margin:0 0 12px;font-size:16px}
+.stat small{color:var(--mute);display:block}
+.stat b{font-size:22px}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;align-items:end}
+.form input[type=checkbox]{width:22px;height:22px;accent-color:var(--purple)}
+.list li.empty{justify-content:center}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="loader" class="screen"><div class="ld"><h1>Pocket Market</h1><div class="bar"><i id="fill"></i></div><div class="ldrow"><span id="ldtxt">Starting up</span><span id="pct">0%</span></div></div></div>
+<div id="auth" class="screen" hidden>
+<form class="box" id="form" autocomplete="off" novalidate>
+<h1>Pocket Market</h1>
+<p id="sub">Create an account to start shopping</p>
+<div class="seg" id="seg" data-m="up"><span class="pill"></span><button type="button" data-mode="up" aria-pressed="true">Create account</button><button type="button" data-mode="in" aria-pressed="false">Sign in</button></div>
+<div id="fields">
+<label>Username<input id="fu" autocomplete="off"></label>
+<div id="fel"><div><label>Email<input id="fe" type="email" autocomplete="off"></label></div></div>
+<label>Password<input id="fp" type="password" autocomplete="off"></label>
+</div>
+<p id="err" role="alert"></p>
+<div class="swipe" id="sw" tabindex="0" role="slider" aria-label="Swipe to continue" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+<span class="lbl" id="lbl"><span id="swt">Swipe to create account</span></span>
+<b class="knob" id="kn"><svg class="ar" viewBox="0 0 24 24"><path d="M5 6l6 6-6 6M13 6l6 6-6 6"/></svg><svg class="ck" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></b>
+</div>
+</form>
+</div>
+<div class="wrap" id="app" hidden>
+  <header>
+    <h1>Pocket Market</h1>
+    <nav role="tablist" id="tabs">
+      <button role="tab" data-tab="store" aria-selected="true">Discover</button>
+      <button role="tab" data-tab="lib" aria-selected="false">Library <span id="cnt"></span></button>
+      <button role="tab" data-tab="hist" aria-selected="false">History</button>
+      <button role="tab" data-tab="admin" aria-selected="false" id="adminTab" hidden>Admin</button>
+    </nav>
+    <div class="bal" aria-live="polite"><span id="bal">0</span><span class="u">credits</span><button id="topBtn">Add credits</button><span id="who" class="u"></span><button id="out">Sign out</button></div>
+  </header>
+  <main id="view"></main>
+  <p class="foot">Demo shop: credits are virtual and no real payments are taken. Your balance and library are saved on this device.</p>
+</div>
+<div id="toast" role="status"></div>
+<script>
+/* Add your items here, one per line, for example:
+   {id:1,n:"Item name",c:"Category",p:25,d:"Short description.",f:true} (f:true shows an item under Featured) */
+let ITEMS=[];try{ITEMS=JSON.parse(localStorage.getItem("pm-items")||"[]")}catch(e){}
+const PACKS=[50,120,300];
+let KEY="";
+let S={credits:100,owned:[],hist:[]};
+function loadState(){S={credits:100,owned:[],hist:[{t:Date.now(),x:"Welcome bonus",d:100}]};try{const r=localStorage.getItem(KEY);if(r)S=JSON.parse(r)}catch(e){}}
+let tab="store",cat="All",showTop=false;
+const $=s=>document.querySelector(s);
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("on"),2200)}
+function buy(id){
+  const it=ITEMS.find(i=>i.id===id);
+  if(S.owned.includes(id))return;
+  if(S.credits<it.p){showTop=true;tab="store";render();toast("Not enough credits. Add "+(it.p-S.credits)+" more to buy this.");return}
+  S.credits-=it.p;S.owned.push(id);logSale(it);S.hist.unshift({t:Date.now(),x:"Bought "+it.n,d:-it.p});save();render();toast("Bought “"+it.n+"”");
+}
+function topUp(c){S.credits+=c;S.hist.unshift({t:Date.now(),x:"Added credits (demo)",d:c});save();showTop=false;render();toast(c+" credits added")}
+let q="";
+function tile(it){
+  const own=S.owned.includes(it.id),short=S.credits<it.p,h=255+(it.id*37)%45;
+  return `<article class="tile" style="--h:${h};--h2:${h+25}${okImg(it.img)?`;background-image:linear-gradient(transparent 40%,rgba(0,0,0,.4)),url('${okImg(it.img)}');background-size:cover;background-position:center`:""}">${okImg(it.img)?"":`<span class="big" aria-hidden="true">${esc(it.n[0])}</span>`}<em class="tag">${own?"Owned":esc(it.c)}</em><div class="ti"><h3>${esc(it.n)}</h3><div class="tr"><span>${it.p} credits</span>${own?"":`<button class="btn sm ${short?"alt":""}" data-buy="${it.id}">${short?"Need "+(it.p-S.credits):"Buy"}</button>`}</div></div></article>`;
+}
+function row(title,list){return `<section><h2 class="pt2">${title}</h2><div class="car"><button class="arr l" data-sc="-1" aria-label="Scroll left">‹</button><div class="strip">${list.length?list.map(tile).join(""):[0,1,2,3].map(()=>`<div class="tile ph"><span>Empty slot</span></div>`).join("")}</div><button class="arr r" data-sc="1" aria-label="Scroll right">›</button></div></section>`}
+function resHTML(){
+  const ql=q.toLowerCase(),f=ITEMS.filter(i=>(cat==="All"||i.c===cat)&&(i.n+" "+i.c+" "+i.d).toLowerCase().includes(ql));
+  if(q||cat!=="All")return f.length?`<div class="grid" style="margin-top:20px">${f.map(tile).join("")}</div>`:`<div class="empty">No items match your search.</div>`;
+  const ft=ITEMS.filter(i=>i.f);
+  return row("Featured",ft.length?ft:ITEMS.slice(0,10))+row("New arrivals",[...ITEMS].reverse().slice(0,10));
+}
+function discover(){
+  const cats=[...new Set(ITEMS.map(i=>i.c))];
+  return `<h2 class="pt">Discover</h2><p class="ps">Search, browse and buy items with credits</p><div class="sbar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" placeholder="Search items by name or category" value="${q.replace(/"/g,"&quot;")}"><select id="cs"><option value="All">All items</option>${cats.map(c=>`<option value="${esc(c)}" ${c===cat?"selected":""}>${esc(c)}</option>`).join("")}</select><button class="go" data-go="1">Search</button></div><div id="res">${resHTML()}</div>`;
+}
+document.addEventListener("input",e=>{if(e.target.id==="q"){q=e.target.value;$("#res").innerHTML=resHTML()}});
+document.addEventListener("change",e=>{if(e.target.id==="cs"){cat=e.target.value;$("#res").innerHTML=resHTML()}});
+function fmt(t){return new Date(t).toLocaleString([],{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}
+function render(){
+  const b=$("#bal");
+  if(b.textContent!=S.credits){b.textContent=S.credits;b.animate([{transform:"scale(1.4)",color:"#a78bfa"},{transform:"scale(1)"}],{duration:450,easing:"ease-out"})}
+  $("#cnt").textContent=S.owned.length?"("+S.owned.length+")":"";
+  document.querySelectorAll("#tabs button").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===tab));
+  let h="";
+  if(tab==="store"){
+    if(showTop)h+=`<section class="packs"><p>Add credits. This is a demo, so they are free.</p>${PACKS.map(c=>`<button class="pack" data-top="${c}">${c} credits</button>`).join("")}</section>`;
+    h+=discover();
+  }else if(tab==="lib"){
+    const mine=ITEMS.filter(i=>S.owned.includes(i.id));
+    h=`<h2 class="pt">Library</h2><p class="ps">Everything you own</p>`+(mine.length?`<div class="grid lib">${mine.map(tile).join("")}</div>`:`<div class="empty">Your library is empty. Buy an item in Discover and it will appear here.</div>`);
+  }else if(tab==="admin"){adminRender();return}else{
+    h=`<ul class="list">${S.hist.map(e=>`<li><span>${esc(e.x)}<br><time>${fmt(e.t)}</time></span><span class="${e.d>0?"plus":""}">${e.d>0?"+":""}${e.d}</span></li>`).join("")}</ul>`;
+  }
+  $("#view").innerHTML=h;
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.id==="topBtn"){tab="store";showTop=!showTop;render()}
+  else if(b.dataset.tab){tab=b.dataset.tab;render()}
+  else if(b.dataset.sc){const s=b.parentElement.querySelector(".strip");s.scrollBy({left:b.dataset.sc*s.clientWidth*.8,behavior:"smooth"})}
+  else if(b.dataset.go){$("#q").focus()}
+  else if(b.dataset.asub){asub=b.dataset.asub;adminRender()}
+  else if(b.dataset.a)adminAct(b);
+  else if(b.dataset.buy)buy(+b.dataset.buy);
+  else if(b.dataset.top)topUp(+b.dataset.top);
+});
+/* ---- security helpers: PBKDF2 passwords, AES-GCM vault, RSA-encrypted sales ---- */
+let ADM=null,CUR="",asub="over",idle;
+const enc=new TextEncoder(),dec=new TextDecoder();
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b)));
+const ub64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const rnd=n=>crypto.getRandomValues(new Uint8Array(n));
+async function derive(p,salt){const k=await crypto.subtle.importKey("raw",enc.encode(p),"PBKDF2",false,["deriveBits"]);const bits=new Uint8Array(await crypto.subtle.deriveBits({name:"PBKDF2",salt,iterations:200000,hash:"SHA-256"},k,512));return{h:b64(bits.slice(0,32)),w:await crypto.subtle.importKey("raw",bits.slice(32),"AES-GCM",false,["encrypt","decrypt"])}}
+async function aesE(key,data){const iv=rnd(12);return b64(iv)+"."+b64(await crypto.subtle.encrypt({name:"AES-GCM",iv},key,data))}
+async function aesD(key,s){const[i,c]=s.split(".");return crypto.subtle.decrypt({name:"AES-GCM",iv:ub64(i)},key,ub64(c))}
+const LK=()=>{try{return JSON.parse(localStorage.getItem("pm-lock")||"{}")}catch(e){return{}}};
+const putLK=l=>{try{localStorage.setItem("pm-lock",JSON.stringify(l))}catch(e){}};
+function lockFail(k){const l=LK(),x=l[k]||{n:0,until:0};x.n++;if(x.n>=5){x.until=Date.now()+60000;x.n=0}l[k]=x;putLK(l)}
+function lockClear(k){const l=LK();delete l[k];putLK(l)}
+function arm(){clearTimeout(idle);if(ADM)idle=setTimeout(()=>{toast("Signed out after 10 minutes of inactivity");$("#out").click()},600000)}
+["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev,arm));
+const saveItems=()=>{try{localStorage.setItem("pm-items",JSON.stringify(ITEMS))}catch(e){}};
+async function logSale(it){try{const j=localStorage.getItem("pm-pub");if(!j)return;const pk=await crypto.subtle.importKey("jwk",JSON.parse(j),{name:"RSA-OAEP",hash:"SHA-256"},false,["encrypt"]);const c=await crypto.subtle.encrypt({name:"RSA-OAEP"},pk,enc.encode(JSON.stringify({t:Date.now(),i:it.id,p:it.p,u:CUR.slice(0,20)})));const l=JSON.parse(localStorage.getItem("pm-sales")||"[]");l.push(b64(c));localStorage.setItem("pm-sales",JSON.stringify(l))}catch(e){}}
+async function audit(m){try{const l=JSON.parse(localStorage.getItem("pm-audit")||"[]");l.push(await aesE(ADM.K,enc.encode(JSON.stringify({t:Date.now(),u:ADM.name,m}))));localStorage.setItem("pm-audit",JSON.stringify(l.slice(-300)))}catch(e){}}
+async function sales(){const out=[];try{const pk=await crypto.subtle.importKey("jwk",JSON.parse(dec.decode(await aesD(ADM.K,localStorage.getItem("pm-priv")))),{name:"RSA-OAEP",hash:"SHA-256"},false,["decrypt"]);for(const s of JSON.parse(localStorage.getItem("pm-sales")||"[]")){try{out.push(JSON.parse(dec.decode(await crypto.subtle.decrypt({name:"RSA-OAEP"},pk,ub64(s)))))}catch(e){}}}catch(e){}return out}
+/* ---- admin panel ---- */
+const stat=(a,b)=>`<div class="stat"><small>${a}</small><b>${b}</b></div>`;
+async function adminRender(){
+  if(!ADM){tab="store";return render()}
+  $("#view").innerHTML=`<h2 class="pt">Admin</h2><p class="ps">Signed in as ${esc(ADM.name)}. You are signed out after 10 minutes of no activity.</p><div class="subnav">${[["over","Overview"],["items","Items"],["users","Users"],["log","Activity"]].map(x=>`<button data-asub="${x[0]}" aria-pressed="${x[0]===asub}">${x[1]}</button>`).join("")}</div><div id="ab"></div>`;
+  const html=await({over:aOver,items:aItems,users:aUsers,log:aLog}[asub])();
+  if($("#ab"))$("#ab").innerHTML=html;
+}
+async function aOver(){
+  const L=await sales(),tot=L.reduce((a,s)=>a+s.p,0),days=[...Array(14)].map((_,i)=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-13+i);return{d,v:0}});
+  L.forEach(s=>{const x=new Date(s.t);x.setHours(0,0,0,0);const r=days.find(y=>+y.d===+x);if(r)r.v+=s.p});
+  const mx=Math.max(10,...days.map(x=>x.v)),bw=600/14,top={};
+  const bars=days.map((x,i)=>{const h=x.v/mx*150;return `<rect x="${i*bw+6}" y="${170-h}" width="${bw-12}" height="${Math.max(h,2)}" rx="5" fill="url(#g)"><title>${x.d.toLocaleDateString()}: ${x.v} credits</title></rect><text x="${i*bw+bw/2}" y="192" text-anchor="middle" font-size="11" fill="#85858f">${x.d.getDate()}</text>`}).join("");
+  L.forEach(s=>top[s.i]=(top[s.i]||0)+s.p);
+  const best=Object.entries(top).sort((a,b)=>b[1]-a[1])[0],bi=best&&ITEMS.find(i=>i.id==best[0]);
+  return `<div class="stats">${stat("Total income",tot+" credits")}${stat("Sales",L.length)}${stat("Best seller",bi?esc(bi.n):"None yet")}${stat("Items listed",ITEMS.length)}</div><div class="panel"><h3>Income, last 14 days (peak ${mx} credits)</h3><svg viewBox="0 0 600 200" width="100%" role="img" aria-label="Daily income bar chart"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c4b5fd"/><stop offset="1" stop-color="#6d3fe0"/></linearGradient></defs>${[20,70,120,170].map(y=>`<line x1="0" x2="600" y1="${y}" y2="${y}" stroke="#26262b"/>`).join("")}${bars}</svg></div><p class="ps">Sales are encrypted when they happen and can only be read by a signed-in admin. Income counts credits spent, which are virtual in this demo.</p>`;
+}
+/* ---- Steam import (needs the desktop app bridge window.pmSteam) ---- */
+const okImg=u=>/^https:\/\/[\w.\-\/?=&%~]+$/.test(u)?u:"";
+let SQ="",SR=[],SEL=null,SBUSY="",SCONF=false;
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="sq"){e.preventDefault();const b=document.querySelector('[data-a="ssearch"]');if(b)b.click()}});
+function steamPanel(){
+  let h=`<div class="panel"><h3>Add a game from Steam</h3>`;
+  if(!window.pmSteam)return h+`<p class="ps" style="margin:0">Steam search works in the desktop app, where it can reach Steam's store. It is switched off in the browser.</p></div>`;
+  h+=`<div class="form"><label>Game name or App ID<input id="sq" value="${esc(SQ)}" maxlength="60" autocomplete="off"></label><button class="btn" data-a="ssearch">Search</button></div>`;
+  if(SBUSY)h+=`<p class="ps" style="margin:12px 0 0">${esc(SBUSY)}</p>`;
+  if(SR.length&&!SEL)h+=`<ul class="list" style="margin-top:12px">${SR.map(r=>`<li><span style="display:flex;gap:10px;align-items:center">${okImg(r.img)?`<img src="${okImg(r.img)}" alt="" width="92" height="43" style="border-radius:6px;object-fit:cover">`:""}<span>${esc(r.name)}<br><time>App ID ${esc(r.id)}</time></span></span>${ITEMS.some(i=>i.sid===r.id)?`<span class="owned">Already listed</span>`:`<button class="btn sm" data-a="spick" data-id="${esc(r.id)}">Select</button>`}</li>`).join("")}</ul>`;
+  if(SEL){
+    const p=SEL.p||{};
+    h+=`<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px">${okImg(SEL.img)?`<img src="${okImg(SEL.img)}" alt="" style="width:230px;max-width:100%;border-radius:12px;align-self:flex-start">`:""}<div style="flex:1;min-width:240px"><h3 style="margin:0 0 2px">${esc(SEL.name)}</h3><p class="ps" style="margin:0 0 12px">App ID ${esc(SEL.id)}</p>`+(SCONF?`<p><b>Are you sure?</b> ${esc(SEL.name)} will be listed for ${p.price} credits in ${esc(p.cat)} and shown publicly in the shop.</p><div class="row" style="justify-content:flex-start"><button class="btn" data-a="syes">Yes, list it</button><button class="btn alt" data-a="sback2">Go back</button></div>`:`<div class="form"><label>Price in credits<input id="sp" type="number" min="1" value="${p.price||""}"></label><label>Category<input id="sc" maxlength="20" value="${esc(p.cat||SEL.genre)}"></label><label>Description<input id="sd" maxlength="140" value="${esc(p.desc??SEL.desc)}"></label><label>Featured<input id="sf" type="checkbox" ${p.f?"checked":""}></label></div><div class="row" style="justify-content:flex-start"><button class="btn" data-a="sgo">Add to shop</button><button class="btn alt" data-a="sback">Cancel</button></div>`)+`</div></div>`;
+  }
+  return h+`</div>`;
+}
+async function aItems(){
+  return steamPanel()+`<div class="panel"><h3>Add an item</h3><div class="form"><label>Name<input id="ni" maxlength="40"></label><label>Category<input id="nc" maxlength="20"></label><label>Price in credits<input id="np" type="number" min="1"></label><label>Description<input id="nd" maxlength="140"></label><label>Featured<input id="nf" type="checkbox"></label><button class="btn" data-a="add">Add item</button></div></div><ul class="list">${ITEMS.length?ITEMS.map(i=>`<li><span>${esc(i.n)}<br><time>${esc(i.c)}, ${i.p} credits${i.f?", featured":""}</time></span><span><button class="btn sm alt" data-a="feat" data-id="${i.id}">${i.f?"Unfeature":"Feature"}</button> <button class="btn sm alt" data-a="del" data-id="${i.id}">Delete</button></span></li>`).join(""):`<li class="empty">No items yet. Add your first one above.</li>`}</ul>`;
+}
+async function aUsers(){
+  const us=U(),me=us[ADM.name.toLowerCase()],own=me&&me.owner;
+  return `<div class="panel"><h3>Add an admin</h3><div class="form"><label>Username<input id="au" maxlength="20" autocomplete="off"></label><label>Email<input id="ae" autocomplete="off"></label><label>Password, 10+ characters<input id="ap" type="password" autocomplete="new-password"></label><button class="btn" data-a="admin">Create admin</button></div></div><ul class="list">${Object.entries(us).map(([k,a])=>`<li><span>${esc(a.name)}<br><time>${esc(a.email)}, ${a.owner?"owner":a.admin?"admin":"customer"}</time></span>${k===ADM.name.toLowerCase()||a.owner||(a.admin&&!own)?"":`<button class="btn sm alt" data-a="rm" data-k="${esc(k)}">Remove</button>`}</li>`).join("")}</ul>`;
+}
+async function aLog(){
+  const out=[];for(const s of JSON.parse(localStorage.getItem("pm-audit")||"[]")){try{out.push(JSON.parse(dec.decode(await aesD(ADM.K,s))))}catch(e){}}
+  return `<ul class="list">${out.length?out.reverse().slice(0,60).map(e=>`<li><span>${esc(e.m)}<br><time>${esc(e.u)}, ${fmt(e.t)}</time></span></li>`).join(""):`<li class="empty">No activity yet.</li>`}</ul>`;
+}
+async function adminAct(b){
+  if(!ADM)return;
+  const a=b.dataset.a;
+  if(a==="ssearch"){
+    SQ=$("#sq").value.trim();if(!SQ||!window.pmSteam)return;
+    SBUSY="Searching Steam...";SEL=null;SCONF=false;await adminRender();
+    try{SR=(await window.pmSteam.search(SQ)).map(r=>({id:String(r.id).replace(/\D/g,""),name:String(r.name).slice(0,80),img:okImg(r.img)}));SBUSY=SR.length?"":"No games found."}catch(e){SR=[];SBUSY="Steam search failed. Check your internet connection."}
+  }else if(a==="spick"){
+    const r=SR.find(x=>x.id===b.dataset.id);if(!r)return;
+    SBUSY="Loading details...";await adminRender();
+    try{const d=await window.pmSteam.app(r.id);SEL={id:r.id,name:String(d.name||r.name).slice(0,40),img:okImg(d.img)||r.img,desc:String(d.desc||"").slice(0,140),genre:String(d.genre||"Games").slice(0,20),p:null};SBUSY=""}catch(e){SBUSY="Could not load that game's details."}
+    SCONF=false;
+  }else if(a==="sback"){SEL=null;SCONF=false}
+  else if(a==="sback2"){SCONF=false}
+  else if(a==="sgo"){
+    const price=Math.floor(+$("#sp").value),cat=$("#sc").value.trim(),desc=$("#sd").value.trim();
+    if(!(price>0&&price<=100000)||!cat||cat.length>20||desc.length>140)return toast("Check the price (1 to 100000), category and description.");
+    SEL.p={price,cat,desc,f:$("#sf").checked};SCONF=true;
+  }else if(a==="syes"){
+    if(ITEMS.some(i=>i.sid===SEL.id))return toast("That game is already listed.");
+    const p=SEL.p;ITEMS.push({id:Math.max(0,...ITEMS.map(i=>i.id))+1,n:SEL.name,c:p.cat,p:p.price,d:p.desc,f:p.f,sid:SEL.id,img:SEL.img});saveItems();
+    await audit("Listed Steam game: "+SEL.name+" (App ID "+SEL.id+")");toast("Listed in the shop");SEL=null;SCONF=false;
+  }else if(a==="add"){
+    const n=$("#ni").value.trim(),c=$("#nc").value.trim(),p=Math.floor(+$("#np").value),d=$("#nd").value.trim();
+    if(!n||n.length>40||!c||c.length>20||!(p>0&&p<=100000)||d.length>140)return toast("Check the fields: name up to 40 characters, category up to 20, price 1 to 100000.");
+    if(ITEMS.some(i=>i.n.toLowerCase()===n.toLowerCase()))return toast("An item with that name is already listed.");
+    ITEMS.push({id:Math.max(0,...ITEMS.map(i=>i.id))+1,n,c,p,d,f:$("#nf").checked});saveItems();await audit("Added item: "+n);toast("Item added");
+  }else if(a==="del"){
+    const it=ITEMS.find(i=>i.id==b.dataset.id);ITEMS=ITEMS.filter(i=>i.id!=b.dataset.id);saveItems();if(it)await audit("Deleted item: "+it.n);
+  }else if(a==="feat"){
+    const it=ITEMS.find(i=>i.id==b.dataset.id);if(it){it.f=!it.f;saveItems();await audit((it.f?"Featured ":"Unfeatured ")+it.n)}
+  }else if(a==="admin"){
+    const u=$("#au").value.trim(),em=$("#ae").value.trim(),p=$("#ap").value,us=U(),k=u.toLowerCase();
+    if(u.length<3||u.length>20||!/^\S+@\S+\.\S+$/.test(em)||p.length<10)return toast("Admin needs a username (3 to 20), a valid email and a password of 10+ characters.");
+    if(us[k])return toast("That username is taken.");
+    const s=rnd(16),d=await derive(p,s);
+    us[k]={name:u,email:em,s:b64(s),h:d.h,admin:true,wk:await aesE(d.w,await crypto.subtle.exportKey("raw",ADM.K))};setU(us);await audit("Created admin: "+u);toast("Admin created");
+  }else if(a==="rm"){
+    const us=U(),x=us[b.dataset.k];if(!x||x.owner||b.dataset.k===ADM.name.toLowerCase())return;
+    delete us[b.dataset.k];setU(us);try{localStorage.removeItem("pocket-market-v1:"+b.dataset.k)}catch(e){}await audit("Removed account: "+x.name);toast("Account removed");
+  }
+  adminRender();
+}
+/* ---- accounts ---- */
+const U=()=>{try{return JSON.parse(localStorage.getItem("pm-users")||"{}")}catch(e){return{}}};
+const setU=u=>{try{localStorage.setItem("pm-users",JSON.stringify(u))}catch(e){}};
+async function hash(s){try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}catch(e){return btoa(unescape(encodeURIComponent(s)))}}
+function show(id){["loader","auth","app"].forEach(x=>$("#"+x).hidden=x!==id)}
+/* ---- swipe bar ---- */
+const sw=$("#sw"),kn=$("#kn"),box=$("#form");
+let mode="up",drag=false,sx=0,max=0,pp=0,busy=false;
+const calc=()=>{max=Math.max(0,sw.clientWidth-kn.offsetWidth-8)};
+function setK(x){x=Math.max(0,Math.min(max,x));pp=max?x/max:0;kn.style.transform="translateX("+x+"px)";sw.style.setProperty("--x",x+"px");sw.style.setProperty("--p",pp);sw.setAttribute("aria-valuenow",Math.round(pp*100))}
+function back(){if(busy)return;sw.classList.remove("drag","ok");kn.style.transition="transform .45s cubic-bezier(.2,.9,.3,1.25)";setK(0)}
+function go(){busy=true;calc();sw.classList.remove("drag");kn.style.transition="transform .2s ease-out";setK(max);submit()}
+kn.addEventListener("pointerdown",e=>{if(busy)return;e.stopPropagation();calc();drag=true;sx=e.clientX;sw.classList.add("drag");kn.setPointerCapture(e.pointerId);kn.style.transition="none"});
+kn.addEventListener("pointermove",e=>{if(drag)setK(e.clientX-sx)});
+const end=()=>{if(!drag)return;drag=false;pp>.9?go():back()};
+kn.addEventListener("pointerup",end);kn.addEventListener("pointercancel",end);
+sw.addEventListener("keydown",e=>{if(!busy&&["Enter"," ","ArrowRight"].includes(e.key)){e.preventDefault();go()}});
+box.addEventListener("submit",e=>{e.preventDefault();$("#err").textContent="Swipe the bar to continue."});
+/* ---- switching: slide the pill, collapse email, slide the fields ---- */
+const flick=(el,d)=>el.animate([{opacity:0,transform:"translateX("+d*30+"px)"},{opacity:1,transform:"none"}],{duration:420,easing:"cubic-bezier(.2,.8,.2,1)"});
+function setMode(m){
+  const changed=m!==mode,d=m==="in"?1:-1;mode=m;
+  $("#seg").dataset.m=m;
+  $("#fel").toggleAttribute("data-off",m==="in");$("#fel").inert=m==="in";
+  $("#swt").textContent=m==="up"?"Swipe to create account":"Swipe to sign in";
+  $("#sub").textContent=m==="up"?(Object.values(U()).some(x=>x.admin)?"Create an account to start shopping":"No admin yet: the account you create now becomes the owner"):"Welcome back, sign in to continue";
+  $("#err").textContent="";
+  document.querySelectorAll("#seg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.mode===m));
+  busy=false;back();
+  if(changed){flick($("#fields"),d);flick($("#lbl"),d);flick($("#sub"),d)}
+}
+$("#seg").addEventListener("click",e=>{const b=e.target.closest("button");if(b&&b.dataset.mode!==mode)setMode(b.dataset.mode)});
+let gx=null;
+box.addEventListener("pointerdown",e=>{gx=e.target.closest("input,.swipe")?null:e.clientX});
+box.addEventListener("pointerup",e=>{if(gx===null)return;const dx=e.clientX-gx;gx=null;if(Math.abs(dx)>60)setMode(dx<0?"in":"up")});
+async function submit(){
+  const u=$("#fu").value.trim(),em=$("#fe").value.trim(),p=$("#fp").value,us=U(),k=u.toLowerCase();
+  const fail=m=>{$("#err").textContent=m;sw.animate([{transform:"translateX(0)"},{transform:"translateX(-9px)"},{transform:"translateX(9px)"},{transform:"translateX(-5px)"},{transform:"translateX(0)"}],{duration:380});setTimeout(()=>{busy=false;back()},450)};
+  let name=u;
+  const first=!Object.values(us).some(x=>x.admin);
+  if(mode==="up"){
+    if(u.length<3||u.length>20)return fail("Username needs 3 to 20 characters.");
+    if(!/^\S+@\S+\.\S+$/.test(em))return fail("Enter a valid email address.");
+    if(p.length<(first?10:6))return fail("Password needs at least "+(first?10:6)+" characters.");
+    if(us[k])return fail("That username is taken. Pick another or sign in.");
+    const s=rnd(16),d=await derive(p,s),acc={name:u,email:em,s:b64(s),h:d.h};
+    if(first){
+      const K=await crypto.subtle.generateKey({name:"AES-GCM",length:256},true,["encrypt","decrypt"]),kp=await crypto.subtle.generateKey({name:"RSA-OAEP",modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:"SHA-256"},true,["encrypt","decrypt"]);
+      acc.admin=true;acc.owner=true;acc.wk=await aesE(d.w,await crypto.subtle.exportKey("raw",K));
+      try{localStorage.setItem("pm-pub",JSON.stringify(await crypto.subtle.exportKey("jwk",kp.publicKey)));localStorage.setItem("pm-priv",await aesE(K,enc.encode(JSON.stringify(await crypto.subtle.exportKey("jwk",kp.privateKey)))))}catch(e){}
+      ADM={K,name:u};
+    }
+    us[k]=acc;setU(us);
+  }else{
+    const a=us[k],lk=LK()[k];
+    if(lk&&lk.until>Date.now())return fail("Too many attempts. Try again in "+Math.ceil((lk.until-Date.now())/1000)+" seconds.");
+    let ok=false,d=null;
+    if(a){if(a.s){d=await derive(p,ub64(a.s));ok=d.h===a.h}else ok=a.h===await hash(p)}
+    if(!ok){lockFail(k);return fail("Username or password is incorrect.")}
+    lockClear(k);name=a.name;
+    if(a.admin){try{ADM={K:await crypto.subtle.importKey("raw",await aesD(d.w,a.wk),"AES-GCM",true,["encrypt","decrypt"]),name:a.name}}catch(e){return fail("Could not unlock the admin vault.")}}
+  }
+  sw.classList.add("ok");$("#swt").textContent="Welcome, "+name;
+  sw.animate([{transform:"scale(1)"},{transform:"scale(1.04)"},{transform:"scale(1)"}],{duration:400});
+  setTimeout(()=>enter(name,k),700);
+}
+function enter(name,k){KEY="pocket-market-v1:"+k;loadState();tab="store";cat="All";q="";showTop=false;$("#who").textContent=name;$("#bal").textContent="0";CUR=name;$("#adminTab").hidden=!ADM;asub="over";arm();show("app");render();if(ADM)audit("Signed in")}
+$("#out").addEventListener("click",()=>{ADM=null;CUR="";clearTimeout(idle);$("#adminTab").hidden=true;["#fu","#fe","#fp"].forEach(s=>$(s).value="");busy=false;show("auth");setMode("in")});
+function start(){show("auth");setMode(Object.keys(U()).length?"in":"up")}
+(function(){const m=["Starting up","Loading the shop","Almost ready"],t0=performance.now(),D=3200;
+  (function f(t){const p=Math.min(1,(t-t0)/D),e=1-Math.pow(1-p,2);$("#fill").style.width=(e*100)+"%";$("#pct").textContent=Math.round(e*100)+"%";$("#ldtxt").textContent=m[Math.min(2,Math.floor(p*3))];if(p<1)requestAnimationFrame(f);else setTimeout(start,300)})(t0);
+})();
+</script>
+</body>
+</html>
